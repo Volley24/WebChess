@@ -1,0 +1,23 @@
+{
+  "name": "webchess",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "nyc ./node_modules/.bin/_mocha 'test/**/*.test.ts'"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.6.4"
+  },
+  "dependencies": {
+    "@testdeck/mocha": "^0.2.0",
+    "chai": "^4.3.6",
+    "mocha": "^10.0.0",
+    "nyc": "^15.1.0",
+    "regenerator-runtime": "^0.13.9",
+    "ts-mockito": "^2.6.1",
+    "ts-node": "^10.7.0"
+  }
+}
