@@ -20,7 +20,6 @@ function startGame(){
       await TextureHandler.loadAll();
 
       const chessBoard = new ChessBoard();
-      chessBoard.init();
 
       const chessBoardRenderer = new BoardRenderer(canvas, context, chessBoard, tileSize);
 

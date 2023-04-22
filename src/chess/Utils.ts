@@ -17,9 +17,9 @@ export default class Utils{
     context.stroke();
   }
 
-  static getCursorPosition(canvas: HTMLCanvasElement, event: any): Pos {
-    const rect = canvas.getBoundingClientRect()
-    return new Pos(event.clientX - rect.left, event.clientY - rect.top)
+  static getCursorPosition(canvas: HTMLCanvasElement, event: MouseEvent): Pos {
+    const rect = canvas.getBoundingClientRect();
+    return new Pos(event.clientX - rect.left, event.clientY - rect.top);
   }
 
   static isValidPosition(x: number, y: number): boolean{
@@ -32,5 +32,12 @@ export default class Utils{
     }else{
       return `Invalid pos: ${x},${y}`;
     }
+  }
+
+  static fromChessPos(chessPos: string): Pos{
+    let x = chessPos.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
+    let y = 8 - (parseInt(chessPos.charAt(1)));
+
+    return new Pos(x, y);
   }
 }

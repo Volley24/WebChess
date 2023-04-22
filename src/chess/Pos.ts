@@ -10,6 +10,10 @@ export default class Pos{
   static copyOf(pos: Pos){
     return new Pos(pos.x, pos.y);
   }
+
+  copy(): Pos{
+    return new Pos(this.x, this.y);
+  }
   
   set(x: number, y: number){
     this.x = x;

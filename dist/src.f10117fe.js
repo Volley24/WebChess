@@ -139,6 +139,11 @@ var Pos = /*#__PURE__*/function () {
   }
 
   _createClass(Pos, [{
+    key: "copy",
+    value: function copy() {
+      return new Pos(this.x, this.y);
+    }
+  }, {
     key: "set",
     value: function set(x, y) {
       this.x = x;
@@ -234,6 +239,13 @@ var Utils = /*#__PURE__*/function () {
       } else {
         return "Invalid pos: ".concat(x, ",").concat(y);
       }
+    }
+  }, {
+    key: "fromChessPos",
+    value: function fromChessPos(chessPos) {
+      var x = chessPos.toUpperCase().charCodeAt(0) - "A".charCodeAt(0);
+      var y = 8 - parseInt(chessPos.charAt(1));
+      return new Pos_1.default(x, y);
     }
   }]);
 
@@ -455,6 +467,7 @@ var TextureHandler = /*#__PURE__*/function () {
 
               case 2:
                 textureList = _context.sent;
+                console.log("Loaded all chess pieces");
                 _iterator = _createForOfIteratorHelper(textureList);
 
                 try {
@@ -468,7 +481,7 @@ var TextureHandler = /*#__PURE__*/function () {
                   _iterator.f();
                 }
 
-              case 5:
+              case 6:
               case "end":
                 return _context.stop();
             }
@@ -490,10 +503,28 @@ var TextureHandler = /*#__PURE__*/function () {
                   var img = new Image();
                   var colorChar = color.charAt(0);
                   var typeChar = type == "knight" ? "N" : type.toUpperCase().charAt(0);
-                  img.src = "https://raw.githubusercontent.com/lichess-org/lila/fcfe042d774ece49e1a5d124d81af0e7996f365a/public/piece/kosal/".concat(colorChar).concat(typeChar, ".svg");
+
+                  if (TextureHandler.SHOULD_LOAD_FROM_GITHUB) {
+                    img.src = "https://raw.githubusercontent.com/lichess-org/lila/fcfe042d774ece49e1a5d124d81af0e7996f365a/public/piece/kosal/".concat(colorChar).concat(typeChar, ".svg");
+                  } else {
+                    img.src = "./assets/".concat(colorChar).concat(typeChar, ".png");
+                  }
 
                   img.onload = function () {
+                    console.log("Loaded ".concat(color, " ").concat(type));
                     resolve(img);
+                  };
+
+                  img.onerror = function () {
+                    console.log("error: can't load lmao");
+                  };
+
+                  img.onabort = function () {
+                    console.log("saddo");
+                  };
+
+                  img.onclose = function () {
+                    console.log("close :(");
                   };
                 });
 
@@ -515,8 +546,75 @@ var TextureHandler = /*#__PURE__*/function () {
 }();
 
 exports.default = TextureHandler;
+TextureHandler.SHOULD_LOAD_FROM_GITHUB = true;
 TextureHandler.textureDict = {};
-},{}],"src/ChessPiece.ts":[function(require,module,exports) {
+},{}],"src/Move.ts":[function(require,module,exports) {
+"use strict";
+
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); Object.defineProperty(subClass, "prototype", { writable: false }); if (superClass) _setPrototypeOf(subClass, superClass); }
+
+function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+
+function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } else if (call !== void 0) { throw new TypeError("Derived constructors may only return object or undefined"); } return _assertThisInitialized(self); }
+
+function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
+
+function _isNativeReflectConstruct() { if (typeof Reflect === "undefined" || !Reflect.construct) return false; if (Reflect.construct.sham) return false; if (typeof Proxy === "function") return true; try { Boolean.prototype.valueOf.call(Reflect.construct(Boolean, [], function () {})); return true; } catch (e) { return false; } }
+
+function _getPrototypeOf(o) { _getPrototypeOf = Object.setPrototypeOf ? Object.getPrototypeOf : function _getPrototypeOf(o) { return o.__proto__ || Object.getPrototypeOf(o); }; return _getPrototypeOf(o); }
+
+var __importDefault = this && this.__importDefault || function (mod) {
+  return mod && mod.__esModule ? mod : {
+    "default": mod
+  };
+};
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var Pos_1 = __importDefault(require("./Pos"));
+
+var Move = /*#__PURE__*/function (_Pos_1$default) {
+  _inherits(Move, _Pos_1$default);
+
+  var _super = _createSuper(Move);
+
+  function Move(x, y) {
+    var _this;
+
+    _classCallCheck(this, Move);
+
+    _this = _super.call(this, x, y);
+
+    _this.onPieceMove = function () {};
+
+    return _this;
+  }
+
+  _createClass(Move, [{
+    key: "addAfterMath",
+    value: function addAfterMath(onPieceMove) {
+      this.onPieceMove = onPieceMove;
+      return this;
+    }
+  }]);
+
+  return Move;
+}(Pos_1.default);
+
+exports.default = Move;
+},{"./Pos":"src/Pos.ts"}],"src/ChessPiece.ts":[function(require,module,exports) {
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
@@ -530,38 +628,6 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
-
-var __awaiter = this && this.__awaiter || function (thisArg, _arguments, P, generator) {
-  function adopt(value) {
-    return value instanceof P ? value : new P(function (resolve) {
-      resolve(value);
-    });
-  }
-
-  return new (P || (P = Promise))(function (resolve, reject) {
-    function fulfilled(value) {
-      try {
-        step(generator.next(value));
-      } catch (e) {
-        reject(e);
-      }
-    }
-
-    function rejected(value) {
-      try {
-        step(generator["throw"](value));
-      } catch (e) {
-        reject(e);
-      }
-    }
-
-    function step(result) {
-      result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected);
-    }
-
-    step((generator = generator.apply(thisArg, _arguments || [])).next());
-  });
-};
 
 var __importDefault = this && this.__importDefault || function (mod) {
   return mod && mod.__esModule ? mod : {
@@ -578,6 +644,10 @@ var AxisPiece_1 = __importDefault(require("./AxisPiece"));
 var Pos_1 = __importDefault(require("./Pos"));
 
 var TextureHandler_1 = __importDefault(require("./TextureHandler"));
+
+var Move_1 = __importDefault(require("./Move"));
+
+var Utils_1 = __importDefault(require("./Utils"));
 
 var ChessPiece = /*#__PURE__*/function () {
   function ChessPiece(type, color) {
@@ -599,101 +669,233 @@ var ChessPiece = /*#__PURE__*/function () {
     key: "move",
     value: function move(x, y) {
       this.pos.set(x, y);
-      this.moves += 1;
     }
   }, {
     key: "getMoves",
     value: function getMoves(board) {
+      var _this = this;
+
+      var checkForChecks = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
       var moves = [];
       var x = this.pos.x,
           y = this.pos.y;
 
       if (this.type == "pawn") {
         var mul = this.color == "white" ? -1 : 1;
+        var pawnCanPromote = this.color == "white" && y == 1 || this.color == "black" && y == 6;
 
         if (board.getPiece(x, y + mul) == undefined) {
-          moves.push(new Pos_1.default(x, y + mul));
+          var move = new Move_1.default(x, y + mul);
 
-          if (this.moves == 0 && board.getPiece(x, y + mul * 2) == undefined) {
-            moves.push(new Pos_1.default(x, y + mul * 2));
+          if (pawnCanPromote) {
+            move.addAfterMath(function () {
+              board.setPiece(new ChessPiece("queen", _this.color), x, y + mul);
+            });
+          }
+
+          moves.push(move);
+          var pawnCanMoveForwardTwoSpaces = this.color == "white" && y == 6 || this.color == "black" && y == 1;
+
+          if (pawnCanMoveForwardTwoSpaces && !board.pieceExistsOn(x, y + mul * 2)) {
+            moves.push(new Move_1.default(x, y + mul * 2).addAfterMath(function () {
+              board.enPassantPosition = new Pos_1.default(x, y + mul * 2);
+            }));
           }
         }
 
         var xRight = x + 1;
 
-        if (xRight < 8 && !board.sameColorAs(this, board.getPiece(xRight, y + mul))) {
-          moves.push(new Pos_1.default(xRight, y + mul));
+        if (xRight < 8) {
+          var opponentPieceExists = board.sameColorAs(this, board.getPiece(xRight, y + mul)) === false;
+
+          if (opponentPieceExists) {
+            var rightPawnPos = new Move_1.default(xRight, y + mul);
+
+            if (pawnCanPromote) {
+              rightPawnPos.addAfterMath(function () {
+                board.setPiece(new ChessPiece("queen", _this.color), xRight, y + mul);
+              });
+            }
+
+            moves.push(rightPawnPos);
+          } else if (board.enPassantPosition && board.enPassantPosition.equals(xRight, y) && board.sameColorAs(this, board.getPiece(xRight, y)) === false) {
+            moves.push(new Move_1.default(xRight, y + mul).addAfterMath(function () {
+              board.setPiece(undefined, xRight, y);
+            }));
+          }
         }
 
         var xLeft = x - 1;
 
-        if (xLeft >= 0 && !board.sameColorAs(this, board.getPiece(xLeft, y + mul))) {
-          moves.push(new Pos_1.default(xLeft, y + mul));
+        if (xLeft >= 0) {
+          var _opponentPieceExists = board.sameColorAs(this, board.getPiece(xLeft, y + mul)) === false;
+
+          if (_opponentPieceExists) {
+            var leftPawnPos = new Move_1.default(xLeft, y + mul);
+
+            if (pawnCanPromote) {
+              leftPawnPos.addAfterMath(function () {
+                board.setPiece(new ChessPiece("queen", _this.color), xLeft, y + mul);
+              });
+            }
+
+            moves.push(leftPawnPos);
+          } else if (board.enPassantPosition && board.enPassantPosition.equals(xLeft, y) && board.sameColorAs(this, board.getPiece(xLeft, y)) === false) {
+            moves.push(new Move_1.default(xLeft, y + mul).addAfterMath(function () {
+              board.setPiece(undefined, xLeft, y);
+            }));
+          }
         }
       } else if (this.type == "knight") {
-        return ChessPiece.fromOffsets(this, board, [new Pos_1.default(1, 2), new Pos_1.default(-1, 2), new Pos_1.default(1, -2), new Pos_1.default(-1, -2), new Pos_1.default(2, 1), new Pos_1.default(-2, 1), new Pos_1.default(2, -1), new Pos_1.default(-2, -1)]);
+        moves = ChessPiece.fromOffsets(this, board, [new Pos_1.default(1, 2), new Pos_1.default(-1, 2), new Pos_1.default(1, -2), new Pos_1.default(-1, -2), new Pos_1.default(2, 1), new Pos_1.default(-2, 1), new Pos_1.default(2, -1), new Pos_1.default(-2, -1)]);
       } else if (this.type == "bishop") {
-        return AxisPiece_1.default.getMoves(this, board, ["diagonal_left", "diagonal_right"]);
+        moves = AxisPiece_1.default.getMoves(this, board, ["diagonal_left", "diagonal_right"]);
       } else if (this.type == "queen") {
-        return AxisPiece_1.default.getMoves(this, board, AxisPiece_1.default.getAllAxes());
+        moves = AxisPiece_1.default.getMoves(this, board, AxisPiece_1.default.getAllAxes());
       } else if (this.type == "rook") {
-        return AxisPiece_1.default.getMoves(this, board, ["vertical", "horizontal"]);
+        moves = AxisPiece_1.default.getMoves(this, board, ["vertical", "horizontal"]);
       } else if (this.type == "king") {
         moves = ChessPiece.fromOffsets(this, board, [new Pos_1.default(0, 1), new Pos_1.default(1, 0), new Pos_1.default(1, 1), new Pos_1.default(-1, -1), new Pos_1.default(-1, 1), new Pos_1.default(1, -1), new Pos_1.default(0, -1), new Pos_1.default(-1, 0)]);
-        var yLoc = this.color == "white" ? 7 : 0; // Castling
 
-        var leftRook = board.getPiece(7, yLoc);
+        if (this.moves == 0 && !board.currentColorInCheck) {
+          var backrankYPosition = this.color == "white" ? 7 : 0;
+          var leftRook = board.getPiece(0, backrankYPosition);
+          var rightRook = board.getPiece(7, backrankYPosition);
 
-        if (this.moves == 0 && leftRook != undefined && leftRook.type == "rook" && leftRook.moves == 0) {
-          if (board.getPiece(x + 1, yLoc) == undefined && board.getPiece(x + 2, yLoc) == undefined) {
-            moves.push(new Pos_1.default(x + 2, yLoc));
+          if (leftRook && leftRook.type == "rook" && leftRook.moves == 0) {
+            if (!board.pieceExistsOn(x - 1, backrankYPosition) && !board.pieceExistsOn(x - 2, backrankYPosition) && !board.pieceExistsOn(x - 3, backrankYPosition)) {
+              moves.push(new Move_1.default(x - 2, backrankYPosition).addAfterMath(function () {
+                return board.movePiece(leftRook, x - 1, y);
+              }));
+            }
+          }
+
+          if (rightRook && rightRook.type == "rook" && rightRook.moves == 0) {
+            if (!board.pieceExistsOn(x + 1, backrankYPosition) && !board.pieceExistsOn(x + 2, backrankYPosition)) {
+              moves.push(new Move_1.default(x + 2, backrankYPosition).addAfterMath(function () {
+                return board.movePiece(rightRook, x + 1, y);
+              }));
+            }
           }
         }
+      } // Will my move put my king in check or make it so my king is still in check?
 
-        var rightRook = board.getPiece(0, yLoc);
 
-        if (this.moves == 0 && rightRook != undefined && rightRook.type == "rook" && rightRook.moves == 0) {
-          if (board.getPiece(x - 1, yLoc) == undefined && board.getPiece(x - 2, yLoc) == undefined && board.getPiece(x - 3, yLoc) == undefined) {
-            moves.push(new Pos_1.default(x - 2, yLoc));
+      if (checkForChecks) {
+        var king = board.getKing(this.color);
+
+        if (!king) {
+          console.log("Warning: King not present on board!");
+        } else {
+          var prevX = this.pos.x;
+          var prevY = this.pos.y;
+          var legalMoves = [];
+
+          var _iterator = _createForOfIteratorHelper(moves),
+              _step;
+
+          try {
+            for (_iterator.s(); !(_step = _iterator.n()).done;) {
+              var _move = _step.value;
+              var pieceAtPos = board.getPiece(_move.x, _move.y);
+              board.movePiece(this, _move.x, _move.y, false);
+              var legalMove = true;
+
+              var _iterator2 = _createForOfIteratorHelper(board.getOppositeColoredPieces(this.color).values()),
+                  _step2;
+
+              try {
+                for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+                  var piece = _step2.value;
+                  if (!legalMove) break;
+
+                  var _iterator3 = _createForOfIteratorHelper(piece.getMoves(board, false)),
+                      _step3;
+
+                  try {
+                    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+                      var _move2 = _step3.value;
+
+                      if (_move2.equalsPos(king.pos)) {
+                        legalMove = false;
+                        break;
+                      }
+                    }
+                  } catch (err) {
+                    _iterator3.e(err);
+                  } finally {
+                    _iterator3.f();
+                  }
+                }
+              } catch (err) {
+                _iterator2.e(err);
+              } finally {
+                _iterator2.f();
+              }
+
+              if (legalMove) legalMoves.push(_move); //End simulation
+
+              board.movePiece(this, prevX, prevY, false);
+              if (pieceAtPos) board.setPiece(new ChessPiece(pieceAtPos.type, pieceAtPos.color), _move.x, _move.y);
+            }
+          } catch (err) {
+            _iterator.e(err);
+          } finally {
+            _iterator.f();
           }
-        } // End Castling
 
+          moves = legalMoves;
+        }
       }
 
       return moves;
     }
   }], [{
-    key: "load",
-    value: function load(type, color) {
-      return __awaiter(this, void 0, void 0, /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-        var img;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
-          while (1) {
-            switch (_context.prev = _context.next) {
-              case 0:
-                _context.next = 2;
-                return new Promise(function (resolve) {
-                  var img = new Image();
-                  var colorChar = color.charAt(0);
-                  var typeChar = type == "knight" ? "N" : type.toUpperCase().charAt(0);
-                  img.src = "https://raw.githubusercontent.com/lichess-org/lila/fcfe042d774ece49e1a5d124d81af0e7996f365a/public/piece/kosal/".concat(colorChar).concat(typeChar, ".svg");
+    key: "matches",
+    value: function matches(chessPiece, color, type, moves) {
+      if (!chessPiece) return false;
+      var matches = true;
+      if (color) matches = matches && chessPiece.color == color;
+      if (type) matches = matches && chessPiece.type == type;
+      if (moves) matches = matches && chessPiece.moves == moves;
+      return matches;
+    }
+  }, {
+    key: "getTypeByLetter",
+    value: function getTypeByLetter(letter) {
+      switch (letter.toLowerCase()) {
+        case 'p':
+          return "pawn";
 
-                  img.onload = function () {
-                    resolve(img);
-                  };
-                });
+        case 'n':
+          return "knight";
 
-              case 2:
-                img = _context.sent;
-                return _context.abrupt("return", [img, color.toUpperCase() + "_" + type.toUpperCase()]);
+        case 'b':
+          return "bishop";
 
-              case 4:
-              case "end":
-                return _context.stop();
-            }
-          }
-        }, _callee);
-      }));
+        case 'r':
+          return "rook";
+
+        case 'q':
+          return "queen";
+
+        case 'k':
+          return "king";
+
+        default:
+          throw "Invalid char!";
+      }
+    }
+  }, {
+    key: "getLetterByType",
+    value: function getLetterByType(pieceType) {
+      switch (pieceType) {
+        case 'knight':
+          return "n";
+
+        default:
+          return pieceType.toLowerCase().charAt(0);
+      }
     }
   }, {
     key: "fromOffsets",
@@ -701,26 +903,26 @@ var ChessPiece = /*#__PURE__*/function () {
       var moves = [];
       var initPos = new Pos_1.default(chessPiece.pos.x, chessPiece.pos.y);
 
-      var _iterator = _createForOfIteratorHelper(offsets),
-          _step;
+      var _iterator4 = _createForOfIteratorHelper(offsets),
+          _step4;
 
       try {
-        for (_iterator.s(); !(_step = _iterator.n()).done;) {
-          var offset = _step.value;
+        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+          var offset = _step4.value;
           var realPos = initPos.plus(offset.x, offset.y);
 
-          var _chessPiece = board.getPiece(realPos.x, realPos.y);
+          if (Utils_1.default.isValidPosition(realPos.x, realPos.y)) {
+            var piece = board.getPiece(realPos.x, realPos.y);
 
-          var canMove = _chessPiece == undefined || _chessPiece != undefined && _chessPiece.color != _chessPiece.color;
-
-          if (board.isValidPosition(realPos.x, realPos.y) && canMove) {
-            moves.push(realPos);
+            if (!ChessPiece.matches(piece, chessPiece.color)) {
+              moves.push(realPos);
+            }
           }
         }
       } catch (err) {
-        _iterator.e(err);
+        _iterator4.e(err);
       } finally {
-        _iterator.f();
+        _iterator4.f();
       }
 
       return moves;
@@ -731,12 +933,20 @@ var ChessPiece = /*#__PURE__*/function () {
 }();
 
 exports.default = ChessPiece;
-},{"./AxisPiece":"src/AxisPiece.ts","./Pos":"src/Pos.ts","./TextureHandler":"src/TextureHandler.ts"}],"src/ChessBoard.ts":[function(require,module,exports) {
+},{"./AxisPiece":"src/AxisPiece.ts","./Pos":"src/Pos.ts","./TextureHandler":"src/TextureHandler.ts","./Move":"src/Move.ts","./Utils":"src/Utils.ts"}],"src/ChessBoard.ts":[function(require,module,exports) {
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
 
+function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
+
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
 function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+
+function _iterableToArray(iter) { if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter); }
+
+function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToArray(arr); }
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
@@ -755,91 +965,217 @@ var __importDefault = this && this.__importDefault || function (mod) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.GameState = void 0;
 
 var ChessPiece_1 = __importDefault(require("./ChessPiece"));
 
+var Move_1 = __importDefault(require("./Move"));
+
 var Utils_1 = __importDefault(require("./Utils"));
+
+var GameState;
+
+(function (GameState) {
+  GameState[GameState["IN_PROGRESS"] = 0] = "IN_PROGRESS";
+  GameState[GameState["WHITE_WIN"] = 1] = "WHITE_WIN";
+  GameState[GameState["BLACK_WIN"] = 2] = "BLACK_WIN";
+  GameState[GameState["STALEMATE_NO_MOVES"] = 3] = "STALEMATE_NO_MOVES";
+  GameState[GameState["STALEMATE_REPITION"] = 4] = "STALEMATE_REPITION";
+  GameState[GameState["STALEMATE_ENDLESS"] = 5] = "STALEMATE_ENDLESS";
+  GameState[GameState["STALEMATE_DEAD_POSITION"] = 6] = "STALEMATE_DEAD_POSITION";
+})(GameState = exports.GameState || (exports.GameState = {}));
+/* A class representing a chess board, with chess pieces that may move on said board. */
+
 
 var ChessBoard = /*#__PURE__*/function () {
   function ChessBoard() {
+    var fenString = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : ChessBoard.STARTING_FEN;
+
     _classCallCheck(this, ChessBoard);
 
-    this.whitePieces = {};
-    this.blackPieces = {};
-    this.isInCheck = false;
-    this.whiteToMove = true;
-    this.moves = 0;
-    this.textureDict = {};
-  }
-  /* FORMAT:
-    getPiece(x, y): Get piece by x and y
-    setPiece(piece, x, y): Set a position to a piece
-        move(piece, newX, newY): Move a piece to a position, if the piece exists on the board.
-        getWhitePieces(): Get all white pieces
-    getBlackPieces(): Get all black pieces
-      */
+    /* In which state the game currently is; defines if the game is on going, or finished, and how it was finished if applicable. */
+    this.gameState = GameState.IN_PROGRESS;
+    /* A dictionary of chess pieces for each color with a key denotating a position.*/
 
+    this.whitePieces = new Map();
+    this.blackPieces = new Map();
+    this.currentColorInCheck = false;
+    this.currentColorToMove = "white";
+    /* The one-move position of a pawn if said pawn moved two spaces forward; enabled en-passant capture.*/
+
+    this.enPassantPosition = undefined;
+    /* Half and full move counters*/
+
+    this.halfMoves = 0; // Half-moves are incremented every turn and reset to 0 if a pawn move or a capture is made. A stalemate occurs at 50 half moves. 
+
+    this.fullMoves = 1; // Full-moves are incremented after black's turn
+
+    /* A dictionary containing the textures of each of the pieces */
+
+    this.textureDict = {};
+    this.parseFen(fenString);
+  }
 
   _createClass(ChessBoard, [{
-    key: "move",
-    value: function move(x, y, x1, y1) {
-      var force = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : false;
-      var chessPiece = this.getPiece(x, y);
+    key: "sim",
+    value: function sim(color, depth) {
+      var currentDepth = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 0;
+      var moves = 0;
+      currentDepth++;
 
-      if (chessPiece) {
-        var moves = chessPiece.getMoves(this);
-        var canMove;
+      for (var _i = 0, _arr = _toConsumableArray(this.getPiecesOfColor(color).values()); _i < _arr.length; _i++) {
+        var piece = _arr[_i];
 
-        if (moves) {
-          canMove = false;
-
-          var _iterator = _createForOfIteratorHelper(moves),
+        if (currentDepth == depth) {
+          moves += piece.getMoves(this).length;
+        } else {
+          var _iterator = _createForOfIteratorHelper(piece.getMoves(this)),
               _step;
 
           try {
             for (_iterator.s(); !(_step = _iterator.n()).done;) {
-              var pos = _step.value;
-
-              if (pos.x == x1 && pos.y == y1) {
-                canMove = true;
-                break;
-              }
+              var move = _step.value;
+              var prevX = piece.pos.x;
+              var prevY = piece.pos.y;
+              var pieceAtPos = this.getPiece(move.x, move.y);
+              this.movePiece(piece, move.x, move.y);
+              moves += this.sim(this.getOpposingColor(color), depth, currentDepth);
+              this.movePiece(piece, prevX, prevY);
+              if (pieceAtPos) this.setPiece(new ChessPiece_1.default(pieceAtPos.type, pieceAtPos.color), move.x, move.y);
             }
           } catch (err) {
             _iterator.e(err);
           } finally {
             _iterator.f();
           }
-        } else {
-          canMove = true;
-        }
-
-        if (canMove || force) {
-          this.movePiece(chessPiece, x1, y1);
-
-          if (chessPiece.type == "pawn") {
-            //Promotion
-            if (chessPiece.color == "white" && y1 == 0) {
-              this.setPiece(new ChessPiece_1.default("queen", "white"), x1, y1);
-            } else if (chessPiece.color == "black" && y1 == 7) {
-              this.setPiece(new ChessPiece_1.default("queen", "black"), x1, y1);
-            }
-          } else if (chessPiece.type == "king" && y == y1) {
-            //Castling
-            var diffX = x - x1;
-            var rightRook = this.getPiece(7, y);
-            var leftRook = this.getPiece(0, y);
-
-            if (diffX == -2 && rightRook) {
-              this.movePiece(rightRook, x1 - 1, y);
-            } else if (diffX == 2 && leftRook) {
-              this.movePiece(leftRook, x1 + 1, y);
-            }
-          }
-
-          this.whiteToMove = !this.whiteToMove;
         }
       }
+
+      return moves;
+    }
+    /* Attempts to move a chess piece to a new position, checking if said piece may legally do said move, and executing any other checks, such as if the game is over or drawn. */
+
+  }, {
+    key: "attemptToMove",
+    value: function attemptToMove(chessPiecePos, newPos) {
+      var force = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+      if (this.gameState != GameState.IN_PROGRESS) return;
+      var chessPiece = this.getPiece(chessPiecePos.x, chessPiecePos.y);
+
+      if (chessPiece) {
+        var moves = chessPiece.getMoves(this);
+        var moveToMake;
+
+        if (moves) {
+          var _iterator2 = _createForOfIteratorHelper(moves),
+              _step2;
+
+          try {
+            for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+              var move = _step2.value;
+
+              if (newPos.equalsPos(move)) {
+                moveToMake = move;
+                break;
+              }
+            }
+          } catch (err) {
+            _iterator2.e(err);
+          } finally {
+            _iterator2.f();
+          }
+        }
+
+        if (moveToMake || force) {
+          this.movePiece(chessPiece, newPos.x, newPos.y);
+          this.enPassantPosition = undefined;
+
+          if (!force && moveToMake instanceof Move_1.default) {
+            moveToMake.onPieceMove();
+          }
+
+          this.incrementMoves(chessPiece, newPos);
+          this.updateGameState(chessPiece.color);
+          this.currentColorToMove = this.getOpposingColor(this.currentColorToMove);
+        }
+      }
+    }
+  }, {
+    key: "incrementMoves",
+    value: function incrementMoves(chessPiece, newPiecePos) {
+      if (this.currentColorToMove == "black") {
+        this.fullMoves++;
+      }
+
+      if (chessPiece.type == "pawn" || this.getPiece(newPiecePos.x, newPiecePos.y)) {
+        this.halfMoves = 0;
+      } else {
+        this.halfMoves++;
+      }
+    }
+  }, {
+    key: "updateGameState",
+    value: function updateGameState(currentColor) {
+      var opposingKing = this.getKing(this.getOpposingColor(currentColor));
+      var enemyKingInCheck = false;
+
+      var _iterator3 = _createForOfIteratorHelper(this.getPiecesOfColor(currentColor).values()),
+          _step3;
+
+      try {
+        for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+          var _piece = _step3.value;
+          if (enemyKingInCheck) break;
+
+          var _iterator4 = _createForOfIteratorHelper(_piece.getMoves(this, false)),
+              _step4;
+
+          try {
+            for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
+              var move = _step4.value;
+
+              if (move.equalsPos(opposingKing.pos)) {
+                enemyKingInCheck = true;
+                break;
+              }
+            }
+          } catch (err) {
+            _iterator4.e(err);
+          } finally {
+            _iterator4.f();
+          }
+        }
+      } catch (err) {
+        _iterator3.e(err);
+      } finally {
+        _iterator3.f();
+      }
+
+      var enemyTeamHasAnyMoves = false; // Copy list so the 'simulations' don't interfer with the list order
+
+      for (var _i2 = 0, _arr2 = _toConsumableArray(this.getPiecesOfColor(this.getOpposingColor(currentColor)).values()); _i2 < _arr2.length; _i2++) {
+        var piece = _arr2[_i2];
+        var moves = piece.getMoves(this).length;
+
+        if (moves != 0) {
+          enemyTeamHasAnyMoves = true;
+          break;
+        }
+      }
+
+      var isCheckmate = !enemyTeamHasAnyMoves && enemyKingInCheck;
+      var isStalemate = !enemyTeamHasAnyMoves && !enemyKingInCheck;
+      this.currentColorInCheck = enemyKingInCheck;
+
+      if (isCheckmate) {
+        this.gameState = this.currentColorToMove == "white" ? GameState.WHITE_WIN : GameState.BLACK_WIN;
+      } else if (isStalemate) {
+        this.gameState = GameState.STALEMATE_NO_MOVES;
+      } else if (this.halfMoves == 50) {
+        this.gameState = GameState.STALEMATE_ENDLESS;
+      }
+
+      return enemyKingInCheck ? "check" : "normal";
     }
   }, {
     key: "sameColorAs",
@@ -851,20 +1187,90 @@ var ChessBoard = /*#__PURE__*/function () {
       return chessPiece1.color == chessPiece2.color;
     }
   }, {
-    key: "init",
-    value: function init() {
-      this.whitePieces = {};
-      this.blackPieces = {};
-      this.whiteToMove = true;
-      this.moves = 0;
-      var order = ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"];
+    key: "parseFen",
+    value: function parseFen(fenString) {
+      var fenComponents = fenString.split(" ");
 
-      for (var x = 0; x < 8; x++) {
-        this.setPiece(new ChessPiece_1.default(order[x], "black"), x, 0);
-        this.setPiece(new ChessPiece_1.default("pawn", "black"), x, 1);
-        this.setPiece(new ChessPiece_1.default("pawn", "white"), x, 6);
-        this.setPiece(new ChessPiece_1.default(order[x], "white"), x, 7);
+      for (var i = 0; i < fenComponents.length; i++) {
+        var fenComponent = fenComponents[i];
+
+        switch (i) {
+          case 0:
+            this.parsePiecePositions(fenComponent);
+
+          case 1:
+            this.currentColorToMove = fenComponent == "w" ? "white" : "black";
+
+          case 2:
+            this.enPassantPosition = Utils_1.default.fromChessPos(fenComponent);
+
+          case 3:
+            /* TODO */
+            ;
+
+          case 4:
+            this.halfMoves = parseInt(fenComponent);
+
+          case 4:
+            this.fullMoves = parseInt(fenComponent);
+        }
       }
+    }
+  }, {
+    key: "parsePiecePositions",
+    value: function parsePiecePositions(piecePosString) {
+      var currentX = 0,
+          currentY = 0;
+
+      for (var i = 0; i < piecePosString.length; i++) {
+        var char = piecePosString.charAt(i);
+
+        if (char == "/") {
+          currentY += 1;
+          currentX = 0;
+        } else if (char >= '0' && char <= '9') {
+          currentX += parseInt(char);
+        } else {
+          var pieceType = ChessPiece_1.default.getTypeByLetter(char);
+          var pieceColor = char.toUpperCase() == char ? "white" : "black";
+          this.setPiece(new ChessPiece_1.default(pieceType, pieceColor), currentX, currentY);
+          currentX += 1;
+        }
+      }
+    }
+  }, {
+    key: "getFen",
+    value: function getFen() {
+      var currentBlanks = 0;
+      var fenString = "";
+
+      for (var y = 0; y < 8; y++) {
+        for (var x = 0; x < 8; x++) {
+          var chessPiece = this.getPiece(x, y);
+
+          if (chessPiece) {
+            if (currentBlanks != 0) {
+              fenString += currentBlanks;
+              currentBlanks = 0;
+            }
+
+            var letter = ChessPiece_1.default.getLetterByType(chessPiece.type);
+            if (chessPiece.color == "white") letter = letter.toUpperCase();
+            fenString += letter;
+          } else {
+            currentBlanks++;
+          }
+        }
+
+        if (currentBlanks != 0) {
+          fenString += currentBlanks;
+          currentBlanks = 0;
+        }
+
+        if (y != 7) fenString += "/";
+      }
+
+      return fenString;
     }
   }, {
     key: "isDarkSquare",
@@ -879,8 +1285,17 @@ var ChessBoard = /*#__PURE__*/function () {
   }, {
     key: "getPiece",
     value: function getPiece(x, y) {
-      var stringLocator = this.getLocator(x, y);
-      return this.whitePieces[stringLocator] || this.blackPieces[stringLocator];
+      if (this.isValidPosition(x, y)) {
+        var stringLocator = this.getLocator(x, y);
+        return this.whitePieces.get(stringLocator) || this.blackPieces.get(stringLocator);
+      } else {
+        return undefined;
+      }
+    }
+  }, {
+    key: "pieceExistsOn",
+    value: function pieceExistsOn(x, y) {
+      return this.getPiece(x, y) != undefined;
     }
   }, {
     key: "setPiece",
@@ -893,14 +1308,54 @@ var ChessBoard = /*#__PURE__*/function () {
         this.removePiece(x, y);
 
         if (chessPiece.color == "white") {
-          this.whitePieces[stringLocator] = chessPiece;
-          console.log("Added white piece at pos ".concat(Utils_1.default.toChessPos(x, y)));
+          this.whitePieces.set(stringLocator, chessPiece);
         } else {
-          this.blackPieces[stringLocator] = chessPiece;
-          console.log("Added black piece at pos ".concat(Utils_1.default.toChessPos(x, y)));
+          this.blackPieces.set(stringLocator, chessPiece);
         }
 
         chessPiece.pos.set(x, y);
+      }
+    }
+  }, {
+    key: "getKing",
+    value: function getKing(string) {
+      var pieces = this.getOppositeColoredPieces(string == "white" ? "black" : "white");
+
+      var _iterator5 = _createForOfIteratorHelper(pieces.values()),
+          _step5;
+
+      try {
+        for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+          var piece = _step5.value;
+
+          //console.log(`Grabbing king: ${piece}`)
+          if (piece.type == "king") {
+            return piece;
+          }
+        }
+      } catch (err) {
+        _iterator5.e(err);
+      } finally {
+        _iterator5.f();
+      }
+    }
+  }, {
+    key: "getPiecesOfColor",
+    value: function getPiecesOfColor(color) {
+      return color == "white" ? this.whitePieces : this.blackPieces;
+    }
+  }, {
+    key: "getOpposingColor",
+    value: function getOpposingColor(color) {
+      return color == "white" ? "black" : "white";
+    }
+  }, {
+    key: "getOppositeColoredPieces",
+    value: function getOppositeColoredPieces(string) {
+      if (string == "white") {
+        return this.blackPieces;
+      } else {
+        return this.whitePieces;
       }
     }
   }, {
@@ -908,22 +1363,22 @@ var ChessBoard = /*#__PURE__*/function () {
     value: function removePiece(x, y) {
       var stringLocator = this.getLocator(x, y);
 
-      if (this.whitePieces[stringLocator] != undefined) {
-        delete this.whitePieces[stringLocator];
-        console.log("Removed white piece at pos ".concat(Utils_1.default.toChessPos(x, y)));
-      } else if (this.blackPieces[stringLocator] != undefined) {
-        delete this.blackPieces[stringLocator];
-        console.log("Removed black piece at pos ".concat(Utils_1.default.toChessPos(x, y)));
+      if (this.whitePieces.get(stringLocator)) {
+        this.whitePieces.delete(stringLocator);
+      } else if (this.blackPieces.get(stringLocator)) {
+        this.blackPieces.delete(stringLocator);
       }
     }
   }, {
     key: "movePiece",
     value: function movePiece(chessPiece, newX, newY) {
+      var incrementMoves = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
+
       if (this.getPiece(chessPiece.pos.x, chessPiece.pos.y)) {
-        console.log("\n");
         this.setPiece(undefined, chessPiece.pos.x, chessPiece.pos.y);
         this.setPiece(chessPiece, newX, newY);
         chessPiece.move(newX, newY);
+        if (incrementMoves) chessPiece.moves += 1;
       }
     }
   }, {
@@ -934,7 +1389,7 @@ var ChessBoard = /*#__PURE__*/function () {
   }, {
     key: "canPieceBePlayed",
     value: function canPieceBePlayed(chessPiece) {
-      return this.whiteToMove && chessPiece.color == "white" || !this.whiteToMove && chessPiece.color == "black";
+      return this.currentColorToMove == chessPiece.color;
     }
   }]);
 
@@ -942,7 +1397,9 @@ var ChessBoard = /*#__PURE__*/function () {
 }();
 
 exports.default = ChessBoard;
-},{"./ChessPiece":"src/ChessPiece.ts","./Utils":"src/Utils.ts"}],"src/ChessBoardRenderer.ts":[function(require,module,exports) {
+ChessBoard.STARTING_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - KQkq - 0 1";
+ChessBoard.PIECE_ORDER = ["rook", "knight", "bishop", "queen", "king", "bishop", "knight", "rook"];
+},{"./ChessPiece":"src/ChessPiece.ts","./Move":"src/Move.ts","./Utils":"src/Utils.ts"}],"src/ChessBoardRenderer.ts":[function(require,module,exports) {
 "use strict";
 
 function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it.return != null) it.return(); } finally { if (didErr) throw err; } } }; }
@@ -957,6 +1414,46 @@ function _defineProperties(target, props) { for (var i = 0; i < props.length; i+
 
 function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); Object.defineProperty(Constructor, "prototype", { writable: false }); return Constructor; }
 
+var __createBinding = this && this.__createBinding || (Object.create ? function (o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  var desc = Object.getOwnPropertyDescriptor(m, k);
+
+  if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+    desc = {
+      enumerable: true,
+      get: function get() {
+        return m[k];
+      }
+    };
+  }
+
+  Object.defineProperty(o, k2, desc);
+} : function (o, m, k, k2) {
+  if (k2 === undefined) k2 = k;
+  o[k2] = m[k];
+});
+
+var __setModuleDefault = this && this.__setModuleDefault || (Object.create ? function (o, v) {
+  Object.defineProperty(o, "default", {
+    enumerable: true,
+    value: v
+  });
+} : function (o, v) {
+  o["default"] = v;
+});
+
+var __importStar = this && this.__importStar || function (mod) {
+  if (mod && mod.__esModule) return mod;
+  var result = {};
+  if (mod != null) for (var k in mod) {
+    if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+  }
+
+  __setModuleDefault(result, mod);
+
+  return result;
+};
+
 var __importDefault = this && this.__importDefault || function (mod) {
   return mod && mod.__esModule ? mod : {
     "default": mod
@@ -967,80 +1464,59 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var ChessBoard_1 = __importStar(require("./ChessBoard"));
+
 var Pos_1 = __importDefault(require("./Pos"));
 
 var Utils_1 = __importDefault(require("./Utils"));
 
 var BoardRenderer = /*#__PURE__*/function () {
   function BoardRenderer(canvas, context, chessBoard, tileSize) {
+    var _this = this;
+
     _classCallCheck(this, BoardRenderer);
 
     this.colors = {
       light: "#ffc973",
       dark: "#915900"
     };
-    this.validMoves = undefined;
     this.pickedUpPiece = undefined;
     this.pickedUpPiecePos = undefined;
     this.selectedSquare = undefined;
+    this.highlightedSquares = [];
+    this.validMoves = [];
     this.freeMove = false;
     this.canvas = canvas;
     this.context = context;
+    this.statusElement = document.getElementById("status");
     this.chessBoard = chessBoard;
     this.tileSize = tileSize;
     var renderer = this;
     this.canvas.addEventListener('keydown', function (e) {
       if (e.code == "KeyR") {
         renderer.reset();
+      } else if (e.code == "KeyF") {
+        renderer.freeMove = !renderer.freeMove;
+      } else if (e.code == "KeyC") {
+        console.log(renderer.chessBoard.getFen());
       }
     });
-    this.canvas.addEventListener('mouseup', function (e) {
-      var _a;
 
-      var pos = Utils_1.default.getCursorPosition(renderer.canvas, e);
-      var tilePos = new Pos_1.default(Math.floor(pos.x / renderer.tileSize), Math.floor(pos.y / renderer.tileSize));
-      var oldPos = (_a = renderer.pickedUpPiece) === null || _a === void 0 ? void 0 : _a.pos;
+    this.canvas.oncontextmenu = function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
-      if (tilePos.equalsPos(oldPos)) {
-        renderer.selectedSquare = Pos_1.default.copyOf(tilePos);
-        renderer.resetPickedUpPiece();
-      } else {
-        if (!renderer.chessBoard.isValidPosition(tilePos.x, tilePos.y)) {
-          renderer.selectedSquare = undefined;
-          renderer.resetPickedUpPiece();
-        } else if (renderer.selectedSquare) {
-          renderer.chessBoard.move(renderer.selectedSquare.x, renderer.selectedSquare.y, tilePos.x, tilePos.y, renderer.freeMove);
-          renderer.selectedSquare = undefined;
-          renderer.validMoves = undefined;
-          renderer.resetPickedUpPiece();
-        }
-      }
+    this.canvas.addEventListener('mousedown', function (event) {
+      return _this.onMouseDown(_this.canvas, event);
     });
-    this.canvas.addEventListener('mousemove', function (e) {
-      var pos = Utils_1.default.getCursorPosition(renderer.canvas, e);
-
-      if (renderer.pickedUpPiece) {
-        renderer.pickedUpPiecePos = new Pos_1.default(pos.x - renderer.tileSize / 2, pos.y - renderer.tileSize / 2);
-      }
+    this.canvas.addEventListener('mouseup', function (event) {
+      return _this.onMouseUp(_this.canvas, event);
     });
-    this.canvas.addEventListener('mousedown', function (e) {
-      var pos = Utils_1.default.getCursorPosition(renderer.canvas, e);
-      var tilePos = new Pos_1.default(Math.floor(pos.x / renderer.tileSize), Math.floor(pos.y / renderer.tileSize));
-      var chessPiece = renderer.chessBoard.getPiece(tilePos.x, tilePos.y);
-
-      if (chessPiece && (renderer.chessBoard.canPieceBePlayed(chessPiece) || renderer.freeMove)) {
-        if (!renderer.selectedSquare || renderer.selectedSquare && renderer.selectedSquare.equals(tilePos.x, tilePos.y)) {
-          renderer.selectedSquare = Pos_1.default.copyOf(tilePos);
-
-          if (!renderer.freeMove) {
-            renderer.validMoves = chessPiece.getMoves(renderer.chessBoard);
-          }
-
-          renderer.pickedUpPiece = chessPiece;
-          renderer.pickedUpPiecePos = new Pos_1.default(pos.x - renderer.tileSize / 2, pos.y - renderer.tileSize / 2);
-        }
-      }
+    this.canvas.addEventListener('mousemove', function (event) {
+      return _this.onMouseMove(_this.canvas, event);
     });
+    this.updateStatusText();
   }
 
   _createClass(BoardRenderer, [{
@@ -1072,7 +1548,21 @@ var BoardRenderer = /*#__PURE__*/function () {
         }
 
         this.context.fillStyle = "black";
-        this.context.fillText("" + (8 - y), 2, y * this.tileSize + 10);
+        this.context.fillText((8 - y).toString(), 2, y * this.tileSize + 10);
+      }
+
+      var _iterator = _createForOfIteratorHelper(this.highlightedSquares),
+          _step;
+
+      try {
+        for (_iterator.s(); !(_step = _iterator.n()).done;) {
+          var hightlightedSquare = _step.value;
+          Utils_1.default.circle(this.context, hightlightedSquare.x * this.tileSize + this.tileSize / 2, hightlightedSquare.y * this.tileSize + this.tileSize / 2, this.tileSize / 2, "blue");
+        }
+      } catch (err) {
+        _iterator.e(err);
+      } finally {
+        _iterator.f();
       }
 
       if (this.selectedSquare) {
@@ -1080,19 +1570,19 @@ var BoardRenderer = /*#__PURE__*/function () {
       }
 
       if (this.validMoves) {
-        var _iterator = _createForOfIteratorHelper(this.validMoves),
-            _step;
+        var _iterator2 = _createForOfIteratorHelper(this.validMoves),
+            _step2;
 
         try {
-          for (_iterator.s(); !(_step = _iterator.n()).done;) {
-            var move = _step.value;
+          for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+            var move = _step2.value;
             var color = this.chessBoard.isDarkSquare(move.x, move.y) ? "#ebebeb" : "#4a4a4a";
             Utils_1.default.circle(this.context, move.x * this.tileSize + this.tileSize / 2, move.y * this.tileSize + this.tileSize / 2, this.tileSize / 2, color);
           }
         } catch (err) {
-          _iterator.e(err);
+          _iterator2.e(err);
         } finally {
-          _iterator.f();
+          _iterator2.f();
         }
       }
 
@@ -1101,12 +1591,133 @@ var BoardRenderer = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "updateStatusText",
+    value: function updateStatusText() {
+      var infoText = "";
+
+      switch (this.chessBoard.gameState) {
+        case ChessBoard_1.GameState.IN_PROGRESS:
+          infoText = "It is ".concat(this.chessBoard.currentColorToMove, "'s turn.");
+
+          if (this.chessBoard.currentColorInCheck) {
+            infoText += " They are currently in check.";
+          }
+
+          break;
+
+        case ChessBoard_1.GameState.WHITE_WIN:
+          infoText = "White has won by checkmate.";
+          break;
+
+        case ChessBoard_1.GameState.BLACK_WIN:
+          infoText = "Black has won by checkmate.";
+          break;
+
+        case ChessBoard_1.GameState.STALEMATE_NO_MOVES:
+          infoText = "Stalemate by ";
+          break;
+
+        case ChessBoard_1.GameState.STALEMATE_REPITION:
+          infoText = "Stalemate by threefold repition.";
+          break;
+
+        case ChessBoard_1.GameState.STALEMATE_ENDLESS:
+          infoText = "Stalemate by fifty-move rule.";
+          break;
+
+        case ChessBoard_1.GameState.STALEMATE_DEAD_POSITION:
+          infoText = "Stalemate by insufficient material.";
+          break;
+      }
+
+      if (this.chessBoard.gameState != ChessBoard_1.GameState.IN_PROGRESS) {
+        infoText += " (Press 'R' to reset board)";
+      }
+
+      this.statusElement.innerHTML = infoText;
+    }
+  }, {
+    key: "onMouseDown",
+    value: function onMouseDown(canvas, event) {
+      var pos = Utils_1.default.getCursorPosition(canvas, event);
+      var tilePos = new Pos_1.default(Math.floor(pos.x / this.tileSize), Math.floor(pos.y / this.tileSize));
+
+      if (event.button == 0) {
+        this.highlightedSquares = [];
+        var chessPiece = this.chessBoard.getPiece(tilePos.x, tilePos.y);
+
+        if (chessPiece && (this.chessBoard.canPieceBePlayed(chessPiece) || this.freeMove)) {
+          if (!this.selectedSquare || this.selectedSquare && this.selectedSquare.equals(tilePos.x, tilePos.y)) {
+            this.selectedSquare = Pos_1.default.copyOf(tilePos);
+
+            if (!this.freeMove) {
+              this.validMoves = chessPiece.getMoves(this.chessBoard);
+            }
+
+            this.pickedUpPiece = chessPiece;
+            this.pickedUpPiecePos = new Pos_1.default(pos.x - this.tileSize / 2, pos.y - this.tileSize / 2);
+          }
+        }
+      } else if (event.button == 2) {
+        var existingIndex = -1;
+
+        for (var i = 0; i < this.highlightedSquares.length; i++) {
+          var _pos = this.highlightedSquares[i];
+
+          if (_pos.equalsPos(tilePos)) {
+            existingIndex = i;
+            break;
+          }
+        }
+
+        if (existingIndex != -1) {
+          this.highlightedSquares.splice(existingIndex, 1);
+        } else {
+          this.highlightedSquares.push(tilePos);
+        }
+      }
+    }
+  }, {
+    key: "onMouseUp",
+    value: function onMouseUp(canvas, event) {
+      var _a;
+
+      var pos = Utils_1.default.getCursorPosition(canvas, event);
+      var tilePos = new Pos_1.default(Math.floor(pos.x / this.tileSize), Math.floor(pos.y / this.tileSize));
+      var oldPos = (_a = this.pickedUpPiece) === null || _a === void 0 ? void 0 : _a.pos;
+
+      if (tilePos.equalsPos(oldPos)) {
+        this.selectedSquare = Pos_1.default.copyOf(tilePos);
+        this.resetPickedUpPiece();
+      } else {
+        if (!this.chessBoard.isValidPosition(tilePos.x, tilePos.y)) {
+          this.selectedSquare = undefined;
+          this.resetPickedUpPiece();
+        } else if (this.selectedSquare) {
+          this.chessBoard.attemptToMove(this.selectedSquare, tilePos, this.freeMove);
+          this.updateStatusText();
+          this.selectedSquare = undefined;
+          this.validMoves = [];
+          this.resetPickedUpPiece();
+        }
+      }
+    }
+  }, {
+    key: "onMouseMove",
+    value: function onMouseMove(canvas, event) {
+      if (this.pickedUpPiece) {
+        var pos = Utils_1.default.getCursorPosition(canvas, event);
+        this.pickedUpPiecePos = new Pos_1.default(pos.x - this.tileSize / 2, pos.y - this.tileSize / 2);
+      }
+    }
+  }, {
     key: "reset",
     value: function reset() {
-      this.chessBoard.init();
+      this.chessBoard = new ChessBoard_1.default();
       this.resetPickedUpPiece();
       this.selectedSquare = undefined;
-      this.validMoves = undefined;
+      this.validMoves = [];
+      this.updateStatusText();
     }
   }, {
     key: "resetPickedUpPiece",
@@ -1120,7 +1731,7 @@ var BoardRenderer = /*#__PURE__*/function () {
 }();
 
 exports.default = BoardRenderer;
-},{"./Pos":"src/Pos.ts","./Utils":"src/Utils.ts"}],"node_modules/regenerator-runtime/runtime.js":[function(require,module,exports) {
+},{"./ChessBoard":"src/ChessBoard.ts","./Pos":"src/Pos.ts","./Utils":"src/Utils.ts"}],"node_modules/regenerator-runtime/runtime.js":[function(require,module,exports) {
 var define;
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
@@ -1954,13 +2565,12 @@ function startGame() {
 
               case 2:
                 chessBoard = new ChessBoard_1.default();
-                chessBoard.init();
                 chessBoardRenderer = new ChessBoardRenderer_1.default(canvas, context, chessBoard, tileSize);
                 setInterval(function () {
                   return chessBoardRenderer.render();
                 }, 1000 / fps);
 
-              case 6:
+              case 5:
               case "end":
                 return _context.stop();
             }
@@ -1998,7 +2608,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64902" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53050" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
